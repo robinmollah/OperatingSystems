@@ -3,7 +3,7 @@ Run *terminal.py*
 ### Screenshots
 FCFS Demo
 
-![FCFS Demo](img/01.png)
+![FCFS Demo](img/01.PNG)
 
 SJF Nonpreemptive Demo
 
