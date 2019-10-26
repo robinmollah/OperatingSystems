@@ -53,16 +53,11 @@ class SJFProcessor(Processor):
         self.ready = copy.deepcopy(self.processes)
         while self.ready or self.queue:
             if not self.queue:
-                print("Queue is empty. Enqueuing: " + str(self.elapsed_time))
                 process = self.ready.pop(0)
                 self.queue.append(process)
-                print("Enqueued: P" + str(process.pid))
             else:
-                print("On queue: ")
-                self.printProcessList(self.queue)
                 self.queue.sort(key=lambda pr: pr.burstTime)
                 process = self.queue.pop(0)
-                print("Running: P" + str(process.pid))
                 process = self.get_process(process.pid)
                 process.waitingTime = self.elapsed_time - process.arrivalTime
                 self.elapsed_time += process.burstTime
@@ -76,21 +71,56 @@ class SJFProcessor(Processor):
                 self.printProcessList(self.queue)
 
 
-number_of_process = input("Number of processes: ")
-has_arrival_time = bool(input("Has arrival time? "))
+class SRTProcessor(Processor):
+    ready = []
+    queue = []
+    running = None
 
-processor = SJFProcessor()
+    def calculate_times(self):
+        self.ready = copy.deepcopy(self.processes)
+        while self.ready:
+            if not self.running:
+                self.running = self.ready[0]
+                self.queue.append(self.running)
+            else:
+                r_process = self.running
+                arrivals_in_burst_time = self.get_arrivals(r_process)
+                if arrivals_in_burst_time:
+                    self.queue.extend(arrivals_in_burst_time)
+                    next_arrival_time = arrivals_in_burst_time[0].arrivalTime
+                    if next_arrival_time < self.elapsed_time + r_process.burstTime:
+                        r_process.burstTime -= next_arrival_time - self.elapsed_time
+                        self.get_process_queue(r_process.pid).burstTime = r_process.burstTime
+                        self.get_process(r_process.pid).waitingTime = self.elapsed_time - r_process.arrivalTime
+                        self.elapsed_time += next_arrival_time - self.elapsed_time
+                    else:
+                        self.queue.pop(0).burstTime = 0
+                else:
+                    mainProcess = self.get_process(r_process.pid)
+                    alreadyProcessed = mainProcess.burstTime - r_process.burstTime
+                    # FIXME
+                    mainProcess.waitingTime = max(0, self.elapsed_time - r_process.arrivalTime - alreadyProcessed)
+                    self.elapsed_time += r_process.burstTime
+                    self.ready.pop(0)
+                if self.ready:
+                    self.running = self.get_shortest()
 
-for x in range(int(1), int(number_of_process) + 1):
-    burst_time = int(input("PID {} Burst Time: ".format(x)))
-    if has_arrival_time:
-        arrival_time = int(input("PID {} Arrival TIme: ".format(x)))
-        processor.add(Process(pid=x, burst_time=burst_time, arrival_time=arrival_time))
-    else:
-        processor.add(Process(pid=x, burst_time=burst_time))
+    def get_process_queue(self, pid):
+        for pr in self.queue:
+            if pr.pid == pid:
+                return pr
+        pass
 
-processor.calculate_times()
-print("Avg waiting time: " + str(processor.get_avg_waiting_time()))
-# processor.processes.sort(key=lambda process: process.arrivalTime)
-for y in processor.processes:
-    print(y.tostring())
+    def get_arrivals(self, r_process):
+        result = []
+        for pr in self.ready:
+            if r_process.burstTime + self.elapsed_time > pr.arrivalTime > self.elapsed_time:
+                result.append(pr)
+        return result
+        pass
+
+    def get_shortest(self):
+        self.ready.sort(key=lambda k: k.burstTime)
+        return self.ready[0]
+        pass
+
