@@ -28,7 +28,7 @@ def add_process():
     processes.append(new_process)
     new_process.grid(row=ProcessView.index + 1, column=0, columnspan=3)
     addProcessButton.grid(row=ProcessView.index + 2, column=0, columnspan=3)
-    print("BurstTIme: " + str(processes[-2].burstTime))
+    selectMethod.grid(row=ProcessView.index + 3, column=0, columnspan=3)
     pass
 
 
@@ -50,6 +50,12 @@ ddvar.set('FCFS')
 selectMethod = OptionMenu(root, ddvar, *methods)
 selectMethod.grid(row=ProcessView.index + 3, column=0, columnspan=3)
 
+calculateButton = Button(root, text="Calculate", command=calculate)
+
+
+def calculate():
+    # TODO Calculate
+    pass
 
 
 # centers alignment
